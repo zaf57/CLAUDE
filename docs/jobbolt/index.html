@@ -15,7 +15,7 @@
 :root{
   --bg:#EEF2F7; --outer:#DDE5F0; --surface:#FFFFFF; --ink:#0F1E36; --muted:#5B6B84; --line:#D9E1EC;
   --brand:#1F4FD8; --brand-ink:#FFFFFF; --brand-soft:#E3EBFD;
-  --bolt:#FFC21A; --bolt-ink:#1A1400;
+  --bolt:#0A7A50; --bolt-ink:#FFFFFF; --star:#F2B01E;
   --ok:#138A5B; --ok-soft:#DDF3EA; --warn:#A85A08; --warn-soft:#FBEBD6; --danger:#B93226; --danger-soft:#FBE3DF;
   --map-land:#E6ECF4; --map-water:#BCD3F3; --map-road:#FFFFFF; --map-park:#D2EBDB;
   --shadow:0 1px 2px rgba(15,30,54,.06),0 8px 24px rgba(15,30,54,.08);
@@ -25,7 +25,7 @@
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#0B1322; --outer:#060B15; --surface:#131E33; --ink:#EAF0FA; --muted:#9AA9C2; --line:#243350;
-    --brand:#7C9EFF; --brand-ink:#0B1322; --brand-soft:#1B2A4A;
+    --brand:#7C9EFF; --brand-ink:#0B1322; --brand-soft:#1B2A4A; --bolt:#3DDC97; --bolt-ink:#04170F;
     --ok:#4AD39B; --ok-soft:#12332A; --warn:#F0A64B; --warn-soft:#3A2A12; --danger:#FF8577; --danger-soft:#3D1A17;
     --map-land:#18253D; --map-water:#27456F; --map-road:#2B3A57; --map-park:#17332B;
     --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
@@ -34,7 +34,7 @@
 }
 :root[data-theme="dark"]{
   --bg:#0B1322; --outer:#060B15; --surface:#131E33; --ink:#EAF0FA; --muted:#9AA9C2; --line:#243350;
-  --brand:#7C9EFF; --brand-ink:#0B1322; --brand-soft:#1B2A4A;
+  --brand:#7C9EFF; --brand-ink:#0B1322; --brand-soft:#1B2A4A; --bolt:#3DDC97; --bolt-ink:#04170F;
   --ok:#4AD39B; --ok-soft:#12332A; --warn:#F0A64B; --warn-soft:#3A2A12; --danger:#FF8577; --danger-soft:#3D1A17;
   --map-land:#18253D; --map-water:#27456F; --map-road:#2B3A57; --map-park:#17332B;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
@@ -151,7 +151,7 @@ input[type=range]{width:100%;accent-color:var(--brand)}
 .mi.big{width:52px;height:52px}
 .mt{font:700 16px/1.25 var(--f-display);margin-bottom:2px;overflow-wrap:anywhere}
 .ms{display:flex;align-items:center;gap:4px;font-size:13px;color:var(--muted);flex-wrap:wrap}
-.ms .ic{color:var(--bolt);filter:drop-shadow(0 0 0 var(--bolt-ink))}
+.ms .ic{color:var(--star)}
 .mm{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .mp{text-align:right}
 .mp b{display:block;font:800 21px var(--f-display);letter-spacing:-.02em}
@@ -256,7 +256,7 @@ input[type=range]{width:100%;accent-color:var(--brand)}
 .fact small{display:block;font-size:12px;color:var(--muted);font-weight:600}
 .fact b{font:700 17px var(--f-display)}
 .fact.pay{background:var(--bolt);color:var(--bolt-ink)}
-.fact.pay small{color:var(--bolt-ink);opacity:.75}
+.fact.pay small{color:var(--bolt-ink);opacity:.9}
 .reqs{margin:10px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;font-size:14px}
 .reqs li{display:flex;gap:8px;align-items:center}
 .reqs .ic{color:var(--ok)}
@@ -269,7 +269,7 @@ input[type=range]{width:100%;accent-color:var(--brand)}
 .paid .amt{font:800 44px var(--f-display);color:var(--ok);letter-spacing:-.03em}
 .stars{display:flex;gap:4px;justify-content:center}
 .stars button{border:0;background:none;padding:4px;color:var(--line)}
-.stars button.on{color:var(--bolt)}
+.stars button.on{color:var(--star)}
 .about h4{font:700 16px var(--f-display);margin:18px 0 6px}
 .about p,.about li{font-size:14px;color:var(--muted)}
 .about ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px}
@@ -283,8 +283,8 @@ input[type=range]{width:100%;accent-color:var(--brand)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23FFC21A'/%3E%3Cpath d='M36 8 15 36h15l-3 20 22-30H34z' fill='%231A1400'/%3E%3C/svg%3E">
-<meta name="theme-color" content="#FFC21A">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230A7A50'/%3E%3Cpath d='M36 8 15 36h15l-3 20 22-30H34z' fill='%23FFFFFF'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#0A7A50">
 </head>
 <body>
 <div class="app">
