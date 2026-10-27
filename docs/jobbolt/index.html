@@ -305,7 +305,7 @@ input[type=range]{width:100%;accent-color:var(--brand)}
       <button data-action="mode" data-m="employer">Je recrute</button>
     </div>
   </div>
-  <p class="proto">missions, personnes et paiements simulés</p>
+  <p class="proto">Prototype v3 · missions, personnes et paiements simulés</p>
   <main id="view"></main>
 </div>
 <nav class="nav" id="nav" aria-label="Navigation"><div class="nav-in" id="navin"></div></nav>
@@ -317,7 +317,7 @@ input[type=range]{width:100%;accent-color:var(--brand)}
 "use strict";
 
 /* ---------- helpers ---------- */
-var KEY="jobbolt-proto-1";
+var KEY="jobbolt-proto-2";
 function $(s,r){return (r||document).querySelector(s)}
 function $$(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]})}
@@ -420,7 +420,7 @@ var NAMES=[["Léa M.",4.9,31],["Karim B.",4.8,18],["Julie S.",5.0,9],["Thomas W.
 var VER=[
 ["id","Pièce d'identité","Vérifiée par un service agréé. Obligatoire pour accepter une mission."],
 ["selfie","Selfie de contrôle","Comparé à ta pièce d'identité."],
-["siret","Statut micro-entrepreneur","Ton numéro SIRET, pour être payé légalement."],
+["siret","Statut micro-entrepreneur","Ton SIRET. Demandé après ta 1re mission : ton paiement est retenu en attendant (15 jours max)."],
 ["iban","Compte bancaire","Pour les virements instantanés."]
 ];
 var STEPS=["Acceptée","En route","Sur place","Terminée"];
@@ -432,8 +432,8 @@ var now0=Date.now(),DAY=86400000;
 var S={
  mode:"worker",tab:"missions",view:"list",cat:"all",q:"",sort:"near",nowOnly:false,border:false,sel:null,
  missions:[],active:null,posted:[],spent:[],notifs:[],unread:0,sheet:null,
- p:{name:"Alex M.",avail:true,radius:5,skills:["resto","manut"],v:{id:true,selfie:true,siret:true,iban:true},rating:4.9,done:23,onTime:96},
- balance:47.5,
+ p:{name:"Alex M.",avail:true,radius:5,skills:["resto","manut"],v:{id:true,selfie:true,siret:false,iban:true},nsr:0,rating:4.9,done:23,onTime:96},
+ balance:47.5,held:0,fun:{seen:0,acc:0,paid:0,siret:0},
  hist:[
   {t:now0-2*DAY,label:"Livraison de colis, Gare",amt:34,kind:"in"},
   {t:now0-3*DAY,label:"Virement instantané",amt:-60,kind:"out"},
@@ -446,13 +446,15 @@ var S={
 function newDraft(){return {cat:"resto",title:"",desc:"",q:"Centre-ville",start:"now",hours:2,people:1,payType:"hour",amount:13}}
 S.draft=newDraft();
 
-function save(){try{localStorage.setItem(KEY,JSON.stringify({p:S.p,balance:S.balance,hist:S.hist,week:S.week,theme:S.theme,onboarded:S.onboarded,mode:S.mode}))}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify({p:S.p,balance:S.balance,held:S.held,fun:S.fun,hist:S.hist,week:S.week,theme:S.theme,onboarded:S.onboarded,mode:S.mode}))}catch(e){}}
 function load(){
  try{
   var j=JSON.parse(localStorage.getItem(KEY)||"null");
   if(j&&typeof j==="object"){
    if(j.p)S.p=Object.assign(S.p,j.p);
    if(typeof j.balance==="number")S.balance=j.balance;
+   if(typeof j.held==="number")S.held=j.held;
+   if(j.fun&&typeof j.fun==="object")S.fun=Object.assign(S.fun,j.fun);
    if(Array.isArray(j.hist))S.hist=j.hist;
    if(Array.isArray(j.week)&&j.week.length===7)S.week=j.week;
    if(j.theme)S.theme=j.theme;
@@ -604,10 +606,11 @@ function openSheet(html,state){
 function closeSheet(){$("#ov").hidden=true;S.sheet=null;$("#sheet").innerHTML=""}
 function sheetMission(id){
  var m=findM(id);if(!m){closeSheet();return}
- var ph=r2(m.pay/m.hours),canId=S.p.v.id;
+ var ph=r2(m.pay/m.hours),canId=S.p.v.id;S.fun.seen++;
  var btn;
  if(S.active)btn='<button class="btn btn-ghost full" disabled>Termine d\'abord ta mission en cours</button>';
  else if(!canId)btn='<button class="btn btn-bolt full" data-action="toProfile">Vérifie ton identité pour accepter</button>';
+ else if(!S.p.v.siret&&(S.p.nsr||0)>=1)btn='<button class="btn btn-bolt full" data-action="toProfile">Ajoute ton SIRET pour une 2e mission</button>';
  else btn='<button class="btn btn-bolt full" data-action="accept" data-id="'+m.id+'">'+ico("bolt",18,true)+'Accepter la mission</button>';
  var reqs=m.reqs.map(function(r){return '<li>'+ico("check",16)+esc(r)+'</li>'}).join("");
  var html='<div class="grab"></div>'
@@ -620,6 +623,7 @@ function sheetMission(id){
  +'<p style="margin-top:14px">'+esc(m.desc)+'</p>'
  +(reqs?'<ul class="reqs">'+reqs+'</ul>':"")
  +'<div class="trust">'+ico("lock",20)+'<span><b>Paiement garanti.</b> Le demandeur bloque '+eur(m.pay)+' avant le début. Tu es payé à la fin, tout de suite.</span></div>'
+ +(!S.p.v.siret&&(S.p.nsr||0)<1?'<div class="trust">'+ico("lock",20)+'<span><b>Première mission sans statut.</b> Ton paiement est retenu jusqu\'à ce que tu ajoutes ton SIRET (15 jours max). Règle à confirmer avec l\'Urssaf.</span></div>':"")
  +(m.border?'<div class="note warn">Mission en Allemagne : paiement en euros. Les règles du travail transfrontalier sont à cadrer avant le vrai lancement.</div>':"")
  +'<div class="btns">'+btn+'<button class="btn btn-ghost full" data-action="close">Fermer</button></div>';
  openSheet(html,{t:"mission",id:id});
@@ -667,16 +671,16 @@ function say(x){
 }
 function finishMission(){
  var a=S.active,m=a.m,worked=Date.now()-a.workStart;
- S.balance=r2(S.balance+m.pay);
- S.hist.unshift({t:Date.now(),label:m.title,amt:m.pay,kind:"in"});
+ if(S.p.v.siret){S.balance=r2(S.balance+m.pay);S.hist.unshift({t:Date.now(),label:m.title,amt:m.pay,kind:"in"})}
+ else{S.held=r2((S.held||0)+m.pay);S.p.nsr=(S.p.nsr||0)+1;S.fun.paid++;S.hist.unshift({t:Date.now(),label:m.title+" (retenu)",amt:m.pay,kind:"in"})}
  S.p.done++;S.week[todayIdx()]=r2(S.week[todayIdx()]+m.pay);
  S.active=null;save();
  sheetPaid(m,worked);render();
 }
 function starsHtml(v){var h="";for(var i=1;i<=5;i++)h+='<button class="'+(i<=v?"on":"")+'" data-action="rate" data-v="'+i+'" aria-label="'+i+' étoiles">'+ico("star",32,true)+'</button>';return h}
 function sheetPaid(m,ms){
- openSheet('<div class="grab"></div><div class="paid"><div class="bolt-big">'+ico("bolt",42,true)+'</div><h3 style="font-size:22px">Paiement reçu</h3><p class="amt">+'+fmtE(m.pay)+'</p>'
- +'<p class="muted">Crédité à l\'instant sur ton portefeuille pour « '+esc(m.title)+' ».</p>'
+ openSheet('<div class="grab"></div><div class="paid"><div class="bolt-big">'+ico("bolt",42,true)+'</div><h3 style="font-size:22px">'+(S.p.v.siret?"Paiement reçu":"Mission terminée")+'</h3><p class="amt">+'+fmtE(m.pay)+'</p>'
+ +(S.p.v.siret?'<p class="muted">Crédité à l\'instant sur ton portefeuille pour « '+esc(m.title)+' ».</p>':'<p class="muted">Ton paiement est retenu. Ajoute ton SIRET (micro-entreprise gratuite, 15 min en ligne) pour le recevoir tout de suite.</p><button class="btn btn-bolt full" style="margin-top:8px" data-action="toProfile">Ajouter mon SIRET</button>')
  +'<p class="muted small">Temps sur place dans ce prototype : '+mmss(ms)+'</p>'
  +'<div style="margin-top:10px"><p class="small muted" style="margin-bottom:6px">Comment s\'est passée la mission avec '+esc(m.who)+' ?</p><div class="stars" id="stars">'+starsHtml(0)+'</div></div>'
  +'<div class="btns" style="width:100%"><button class="btn btn-primary full" data-action="close">Terminé</button>'
@@ -695,6 +699,7 @@ function vWallet(){
  +'<article class="card bal"><span class="tag">Exemple de solde</span><span style="opacity:.85;font-weight:600">Disponible maintenant</span><span class="amt">'+fmtE(S.balance)+'</span>'
  +'<button class="btn btn-bolt" style="margin-top:8px" data-action="withdrawAsk"'+(S.balance<1?" disabled":"")+'>'+ico("bolt",18,true)+'Retirer maintenant</button>'
  +'<span style="opacity:.8;font-size:13px">Virement instantané, sans attendre la fin du mois.</span></article>'
+ +(S.held>0?'<article class="card"><b>'+fmtE(S.held)+' en attente</b><p class="muted small" style="margin:4px 0 10px">Ajoute ton SIRET pour les recevoir (15 jours max, règle à confirmer).</p><button class="btn btn-bolt full" data-action="toProfile">Ajouter mon SIRET</button></article>':"")
  +'<article class="card"><div class="sec" style="margin:0"><h3>Cette semaine</h3><b class="disp" style="font-size:18px">'+eur(tot)+'</b></div><div class="bars">'+bars+'</div></article>'
  +'<article class="card"><div class="sec" style="margin:0 0 4px"><h3>Historique</h3></div>'+(rows||'<p class="muted">Aucun mouvement pour l\'instant.</p>')+'</article></section>';
 }
@@ -868,8 +873,9 @@ function sheetAbout(){
  +'<h4>Pour celui qui recrute</h4><ul><li>Tu publies un besoin en moins d\'une minute.</li><li>Tu choisis parmi les candidats vérifiés.</li><li>L\'argent est bloqué, tu paies en validant.</li></ul>'
  +'<h4>Confiance</h4><ul><li><b>Identité vérifiée</b> des deux côtés.</li><li><b>Avis</b> après chaque mission.</li><li><b>Paiement garanti</b> avant le début.</li><li><b>Assurance</b> à prévoir pour les dégâts et accidents.</li></ul>'
  +'<h4>Modèle de revenus (exemple)</h4><ul><li>8 % de frais payés par celui qui recrute.</li><li>Celui qui travaille reçoit 100 % du prix affiché.</li></ul>'
- +'<h4>À cadrer avant un vrai lancement</h4><ul><li><b>Statut</b> : micro-entrepreneur plutôt que salarié, avec le risque de requalification à surveiller.</li><li><b>Paiement</b> : passer par un prestataire de paiement agréé, pas par ton propre compte.</li><li><b>Assurance</b> responsabilité civile pour les missions.</li><li><b>Données</b> : RGPD et vérification d\'identité.</li><li><b>Obligations des plateformes</b> envers l\'administration fiscale.</li><li><b>Frontière</b> : règles du travail transfrontalier vers Sarrebruck.</li></ul>'
+ +'<h4>À cadrer avant un vrai lancement</h4><ul><li><b>Statut</b> : micro-entrepreneur plutôt que salarié, avec le risque de requalification à surveiller. Ici, le statut est demandé après la 1re mission, avec paiement retenu en attendant le SIRET (délai de 15 jours à confirmer avec l\'Urssaf).</li><li><b>Paiement</b> : passer par un prestataire de paiement agréé, pas par ton propre compte.</li><li><b>Assurance</b> responsabilité civile pour les missions.</li><li><b>Données</b> : RGPD et vérification d\'identité.</li><li><b>Obligations des plateformes</b> envers l\'administration fiscale.</li><li><b>Frontière</b> : règles du travail transfrontalier vers Sarrebruck.</li></ul>'
  +'<p style="margin-top:12px">À faire valider par un juriste avant d\'ouvrir au public.</p>'
+ +'<h4>Statistiques du test (cet appareil)</h4><ul><li>Missions ouvertes : '+S.fun.seen+'</li><li>Acceptées : '+S.fun.acc+'</li><li>Terminées, paiement retenu : '+S.fun.paid+'</li><li>SIRET ajouté : '+S.fun.siret+'</li></ul>'
  +'<h4>Pas encore dans ce prototype</h4><ul><li>Vrais paiements et vrais comptes.</li><li>Messagerie réelle entre deux personnes.</li><li>Notifications sur le téléphone.</li></ul></div>'
  +'<div class="btns"><button class="btn btn-primary full" data-action="close">Compris</button></div>',{t:"about"});
 }
@@ -919,6 +925,8 @@ var A={
   var m=findM(el.getAttribute("data-id"));if(!m)return;
   if(S.active){toast("Termine d'abord ta mission en cours");return}
   if(!S.p.v.id){toast("Vérifie ton identité d'abord");return}
+  if(!S.p.v.siret&&(S.p.nsr||0)>=1){toast("Ajoute ton SIRET pour une 2e mission");return}
+  S.fun.acc++;
   S.missions=S.missions.filter(function(x){return x.id!==m.id});
   S.active={m:m,step:0,acceptedAt:Date.now(),workStart:null,arriveAt:0,chat:[]};
   sys(S.active,"Mission acceptée. "+fmtE(m.pay)+" sont bloqués et t'attendent.");
@@ -952,7 +960,9 @@ var A={
   S.hist.unshift({t:Date.now(),label:"Virement instantané",amt:-amt,kind:"out"});S.balance=0;save();closeSheet();render();toast(fmtE(amt)+" envoyés sur ton compte");
  },
  skill:function(el){var c=el.getAttribute("data-c"),i=S.p.skills.indexOf(c);if(i>=0)S.p.skills.splice(i,1);else S.p.skills.push(c);save();render()},
- ver:function(el){var k=el.getAttribute("data-k");S.p.v[k]=!S.p.v[k];save();render();toast(S.p.v[k]?"Vérifié (simulation)":"Vérification retirée")},
+ ver:function(el){var k=el.getAttribute("data-k");S.p.v[k]=!S.p.v[k];var msg=S.p.v[k]?"Vérifié (simulation)":"Vérification retirée";
+  if(k==="siret"&&S.p.v.siret){S.fun.siret++;if(S.held>0){S.balance=r2(S.balance+S.held);msg=fmtE(S.held)+" débloqués sur ton portefeuille";S.held=0}}
+  save();render();toast(msg)},
  about:function(){sheetAbout()},
  bell:function(){sheetBell()},
  welcomeOk:function(){S.onboarded=true;save();closeSheet()},
